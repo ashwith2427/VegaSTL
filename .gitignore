@@ -1,3 +1,7 @@
 ECS++/
 ECS++.xcodeproj
-
+.cache/
+main.o
+program
+compile_commands.json
+.gitignore

@@ -1,4 +1,5 @@
 #include "Iterator.hpp"
+#include <cstddef>
 #include <initializer_list>
 #include <iostream>
 #include <type_traits>
@@ -36,6 +37,8 @@ class ArrayList
     void resize(size_t new_size, const T &value);
     void reserve(size_t new_capacity);
     void realloc(size_t newCapacity);
+    void erase_unordered(size_t index);
+    void erase(size_t index);
     void shrink_to_fit();
     template <class V>
     ArrayList<V> map(std::function<V(T, int)> operation);
@@ -104,7 +107,7 @@ ArrayList<T>::ArrayList(ArrayList &&other)
 template <class T>
 ArrayList<T>::~ArrayList()
 {
-    for (int i = 0; i < _size; i++) {
+    for (size_t i = 0; i < _size; i++) {
         _storage[i].~T();
     }
     ::operator delete(_storage);
@@ -202,16 +205,16 @@ void ArrayList<T>::realloc(size_t newCapacity)
     T *newStorage =
         (T *)operator new(newCapacity * type_size, std::align_val_t(alignment));
     if constexpr (std::is_nothrow_move_constructible_v<T>) {
-        for (int i = 0; i < _size; i++) {
+        for (size_t i = 0; i < _size; i++) {
             new (newStorage + i) T(std::move(_storage[i]));
         }
     } else {
-        for (int i = 0; i < _size; i++) {
+        for (size_t i = 0; i < _size; i++) {
             new (newStorage + i) T(_storage[i]);
         }
     }
 
-    for (int i = 0; i < _size; i++) {
+    for (size_t i = 0; i < _size; i++) {
         _storage[i].~T();
     }
     ::operator delete(_storage);
@@ -251,7 +254,35 @@ V ArrayList<T>::reduce(std::function<V(T, T)> operation, V init)
 }
 
 template <class T>
-bool ArrayList<T>::operator==(ArrayList const &other)
+void ArrayList<T>::erase_unordered(size_t index)
+{
+    if (index >= _size)
+        return;
+    if (index != _size - 1) {
+        _storage[index] = std::move(_storage[_size - 1]);
+    }
+    _storage[_size - 1].~T();
+    _size--;
+}
+
+template <class T>
+void ArrayList<T>::erase(size_t index)
+{
+    if (index >= _size)
+        return;
+
+    _storage[index].~T();
+
+    for (size_t i = index; i < _size - 1; i++) {
+        new (_storage + i) T(std::move(_storage[i + 1]));
+        _storage[i + 1].~T();
+    }
+
+    _size--;
+}
+
+template <class T>
+inline bool ArrayList<T>::operator==(ArrayList const &other)
 {
     if (_size != other._size)
         return false;
@@ -270,7 +301,7 @@ inline T const &ArrayList<T>::operator[](size_t idx) const
 }
 
 template <class T>
-T &ArrayList<T>::operator[](size_t idx)
+inline T &ArrayList<T>::operator[](size_t idx)
 {
     return _storage[idx];
 }

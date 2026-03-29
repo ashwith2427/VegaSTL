@@ -5,4 +5,3 @@ main.o
 program
 compile_commands.json
 .gitignore
-main.cpp

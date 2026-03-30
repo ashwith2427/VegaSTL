@@ -5,7 +5,6 @@
 #include <functional>
 #include <initializer_list>
 #include <iostream>
-#include <mutex>
 #include <type_traits>
 
 constexpr size_t alignment = 64;

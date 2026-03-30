@@ -1,3 +1,4 @@
+#pragma once
 #include <iterator>
 
 template <class Element>

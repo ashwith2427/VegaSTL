@@ -1,5 +1,6 @@
 CXX = clang++
-CXXFLAGS = -std=c++17 -Wall -Wextra -ISTL -O3
+CXXFLAGS = -std=c++20 -I./STL -I/opt/homebrew/include
+LDFLAGS = -L/opt/homebrew/lib -lfolly -lpthread -ldl
 TARGET = program
 SOURCES = $(wildcard *.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)
@@ -7,10 +8,10 @@ OBJECTS = $(SOURCES:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)

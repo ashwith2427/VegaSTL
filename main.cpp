@@ -1,99 +1,134 @@
+#include "ArrayList.hpp"
 #include "benchmark.hpp"
+#include "test.hpp"
+#include <assert.h>
 #include <chrono>
+#include <cstdio>
 #include <iostream>
 #include <limits>
+#include <thread>
 
-BENCHMARK("push_back_10M")
+// ================= EXTREME STRESS BENCHMARKS =================
+
+BENCHMARK("push_back_100M")
 {
     ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++) {
+    for (int i = 0; i < 1e8; i++) {
         a.push_back(i);
     }
 }
 
-BENCHMARK("push_pop_mix")
+BENCHMARK("push_pop_huge")
 {
     ArrayList<int> a;
-
-    for (int i = 0; i < 1e6; i++) {
+    for (int i = 0; i < 1e7; i++)
         a.push_back(i);
-    }
-
-    for (int i = 0; i < 5e5; i++) {
+    for (int i = 0; i < 5e6; i++)
         a.pop_back();
-    }
-
-    for (int i = 0; i < 5e5; i++) {
+    for (int i = 0; i < 5e6; i++)
         a.push_back(i);
+}
+
+BENCHMARK("resize_pingpong")
+{
+    ArrayList<int> a;
+    for (int j = 0; j < 50; j++) { // repeat 50 times
+        a.resize(1e6);
+        a.resize(5e5);
     }
 }
 
-
-BENCHMARK("resize_test")
+BENCHMARK("erase_middle_huge")
 {
     ArrayList<int> a;
-    a.resize(1e6);
-    a.resize(5e5);
-    a.resize(1e6);
+    for (int i = 0; i < 1e6; i++)
+        a.push_back(i);
+    for (int i = 0; i < 1e5; i++)
+        a.erase(a.size() / 2); // 100k middle erases
 }
 
-
-BENCHMARK("reserve_reuse")
+BENCHMARK("erase_back_huge")
 {
     ArrayList<int> a;
-    a.reserve(1e7);
-
-    for (int i = 0; i < 1e7; i++) {
+    for (int i = 0; i < 1e7; i++)
         a.push_back(i);
-    }
-
-    a.resize(0);
-
-    for (int i = 0; i < 1e7; i++) {
-        a.push_back(i);
-    }
+    for (int i = 0; i < 1e7; i++)
+        a.pop_back();
 }
 
-
-BENCHMARK("iteration")
+BENCHMARK("erase_unordered_huge")
 {
     ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++) {
+    for (int i = 0; i < 1e7; i++)
         a.push_back(i);
-    }
+    for (int i = 0; i < 1e6; i++)
+        a.erase_unordered(i % a.size());
+}
 
+BENCHMARK("iteration_huge")
+{
+    ArrayList<int> a;
+    for (int i = 0; i < 1e7; i++)
+        a.push_back(i);
     volatile long long sum = 0;
-    for (size_t i = 0; i < a.size(); i++) {
-        sum += a[i];
+    for (int j = 0; j < 100; j++) { // repeat 100 times
+        for (size_t i = 0; i < a.size(); i++)
+            sum += a[i];
     }
 }
 
-
-BENCHMARK("erase_middle_small")
+BENCHMARK("random_access_huge")
 {
     ArrayList<int> a;
-    for (int i = 0; i < 1e5; i++) {
+    for (int i = 0; i < 1e7; i++)
         a.push_back(i);
-    }
 
-    for (int i = 0; i < 1000; i++) {
-        a.erase(a.size() / 2);
+    for (int i = 0; i < 1e6; i++) {
+        size_t idx = rand() % a.size();
+        if (i % 2 == 0)
+            a.erase_unordered(idx);
+        else
+            a.push_back(i);
     }
 }
 
-BENCHMARK("erase_back")
+BENCHMARK("reserve_massive")
 {
     ArrayList<int> a;
-    for (int i = 0; i < 1e6; i++) {
+    a.reserve(2e8); // massive reserve to test large allocations
+    for (int i = 0; i < 2e8; i++)
         a.push_back(i);
-    }
-
-    for (int i = 0; i < 1e6; i++) {
-        a.pop_back();
-    }
+    a.resize(0);
+    for (int i = 0; i < 2e8; i++)
+        a.push_back(i);
 }
 
-int main()
+BENCHMARK("Parallel ArrayList")
+{
+}
+
+TEST("Multithreading")
+{
+    ArrayList<int> list;
+    std::thread p1(
+        [](ArrayList<int> *list) {
+            list->push_back(4);
+        },
+        &list);
+    std::thread p2(
+        [](ArrayList<int> *list) {
+            list->push_back(5);
+        },
+        &list);
+
+    p1.join();
+    p2.join();
+
+    assert(list[0] == 4);
+}
+
+
+void run_benchmark()
 {
     constexpr int WARMUP = 2;
     constexpr int RUNS = 5;
@@ -134,5 +169,27 @@ int main()
     }
 
     std::cout << "============= DONE =============\n";
+}
+
+void run_tests()
+{
+    if (get_tests().size() == 0) {
+        printf("No tests found\n");
+        return;
+    }
+    printf("===============================Running Tests===============================\n");
+    for (const auto &test : get_tests()) {
+        printf("----------------------------------------------\n");
+        printf("Running %s\n", test.name);
+        printf("----------------------------------------------\n");
+        test.f();
+        printf("----------------------------------------------\n");
+    }
+    printf("===================================Done====================================\n");
+}
+
+int main()
+{
+    run_tests();
     return 0;
 }

@@ -1,148 +1,26 @@
-#include "ArrayList.hpp"
 #include "benchmark.hpp"
-#include "test.hpp"
-#include <assert.h>
-#include <chrono>
-#include <cstdio>
+#include <algorithm>
 #include <iostream>
-#include <limits>
-#include <thread>
-
-// ================= EXTREME STRESS BENCHMARKS =================
-
-BENCHMARK("push_back_100M")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e8; i++) {
-        a.push_back(i);
-    }
-}
-
-BENCHMARK("push_pop_huge")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++)
-        a.push_back(i);
-    for (int i = 0; i < 5e6; i++)
-        a.pop_back();
-    for (int i = 0; i < 5e6; i++)
-        a.push_back(i);
-}
-
-BENCHMARK("resize_pingpong")
-{
-    ArrayList<int> a;
-    for (int j = 0; j < 50; j++) { // repeat 50 times
-        a.resize(1e6);
-        a.resize(5e5);
-    }
-}
-
-BENCHMARK("erase_middle_huge")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e6; i++)
-        a.push_back(i);
-    for (int i = 0; i < 1e5; i++)
-        a.erase(a.size() / 2); // 100k middle erases
-}
-
-BENCHMARK("erase_back_huge")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++)
-        a.push_back(i);
-    for (int i = 0; i < 1e7; i++)
-        a.pop_back();
-}
-
-BENCHMARK("erase_unordered_huge")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++)
-        a.push_back(i);
-    for (int i = 0; i < 1e6; i++)
-        a.erase_unordered(i % a.size());
-}
-
-BENCHMARK("iteration_huge")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++)
-        a.push_back(i);
-    volatile long long sum = 0;
-    for (int j = 0; j < 100; j++) { // repeat 100 times
-        for (size_t i = 0; i < a.size(); i++)
-            sum += a[i];
-    }
-}
-
-BENCHMARK("random_access_huge")
-{
-    ArrayList<int> a;
-    for (int i = 0; i < 1e7; i++)
-        a.push_back(i);
-
-    for (int i = 0; i < 1e6; i++) {
-        size_t idx = rand() % a.size();
-        if (i % 2 == 0)
-            a.erase_unordered(idx);
-        else
-            a.push_back(i);
-    }
-}
-
-BENCHMARK("reserve_massive")
-{
-    ArrayList<int> a;
-    a.reserve(2e8); // massive reserve to test large allocations
-    for (int i = 0; i < 2e8; i++)
-        a.push_back(i);
-    a.resize(0);
-    for (int i = 0; i < 2e8; i++)
-        a.push_back(i);
-}
-
-BENCHMARK("Parallel ArrayList")
-{
-}
-
-TEST("Multithreading")
-{
-    ArrayList<int> list;
-    std::thread p1(
-        [](ArrayList<int> *list) {
-            list->push_back(4);
-        },
-        &list);
-    std::thread p2(
-        [](ArrayList<int> *list) {
-            list->push_back(5);
-        },
-        &list);
-
-    p1.join();
-    p2.join();
-
-    assert(list[0] == 4);
-}
-
-
+#include <ranges>
+#include <vector.h>
 void run_benchmark()
 {
     constexpr int WARMUP = 2;
-    constexpr int RUNS = 5;
+    constexpr int RUNS   = 5;
 
     std::cout << "================ BENCHMARKS ================\n\n";
-    for (const auto &bench : get_benchmarks()) {
+    for (auto const& bench : get_benchmarks())
+    {
         std::cout << "[Running] " << bench.name << "...\n";
-        for (int i = 0; i < WARMUP; i++) {
+        for (int i = 0; i < WARMUP; i++)
+        {
             bench.f();
         }
-        long long min_time = std::numeric_limits<long long>::max();
-        long long max_time = 0;
+        long long min_time   = std::numeric_limits<long long>::max();
+        long long max_time   = 0;
         long long total_time = 0;
-        for (int i = 0; i < RUNS; i++) {
+        for (int i = 0; i < RUNS; i++)
+        {
 
             auto start = std::chrono::high_resolution_clock::now();
 
@@ -171,25 +49,182 @@ void run_benchmark()
     std::cout << "============= DONE =============\n";
 }
 
-void run_tests()
+// void run_tests()
+// {
+//     if (get_tests().size() == 0)
+//     {
+//         printf("No tests found\n");
+//         return;
+//     }
+//     auto& tests = get_tests();
+
+//     int passed = 0;
+
+//     for (size_t i = 0; i < tests.size(); i++)
+//     {
+//         auto& t = tests[i];
+
+//         try
+//         {
+//             t.f();
+//             t.passed = true;
+//             passed++;
+//         }
+//         catch (std::exception const& e)
+//         {
+//             t.passed  = false;
+//             t.message = e.what();
+//         }
+//         catch (...)
+//         {
+//             t.passed  = false;
+//             t.message = "Unknown error";
+//         }
+
+//         // Print result
+//         if (t.passed)
+//             std::cout << "[PASS] " << t.name << "\n";
+//         else
+//             std::cout << "[FAIL] " << t.name << " -> " << t.message << "\n";
+//     }
+
+//     std::cout << "\n====================\n";
+//     std::cout << "Passed: " << passed << "/" << tests.size() << "\n";
+// }
+
+// struct Foo
+// {
+//     std::string name;
+// };
+
+// std::ostream& operator<<(std::ostream& os, Foo const& f)
+// {
+//     os << f.name;
+//     return os;
+// }
+
+template <class T>
+void print_T()
 {
-    if (get_tests().size() == 0) {
-        printf("No tests found\n");
-        return;
+    std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
+struct Point
+{
+    int x;
+    int y;
+};
+
+#include <cstring>
+#include <iostream>
+
+struct Person
+{
+    char* name;
+    int   age;
+
+    // Constructor
+    Person(char const* n, int a)
+        : age(a)
+    {
+        name = new char[std::strlen(n) + 1];
+        std::strcpy(name, n);
     }
-    printf("===============================Running Tests===============================\n");
-    for (const auto &test : get_tests()) {
-        printf("----------------------------------------------\n");
-        printf("Running %s\n", test.name);
-        printf("----------------------------------------------\n");
-        test.f();
-        printf("----------------------------------------------\n");
+
+    // Copy constructor (deep copy)
+    Person(Person const& other)
+        : age(other.age)
+    {
+        name = new char[std::strlen(other.name) + 1];
+        std::strcpy(name, other.name);
     }
-    printf("===================================Done====================================\n");
+
+    // Move constructor
+    Person(Person&& other) noexcept
+        : name(other.name)
+        , age(other.age)
+    {
+        other.name = nullptr;
+    }
+
+    // Copy assignment
+    Person& operator=(Person const& other)
+    {
+        if (this != &other)
+        {
+            delete[] name;
+            age  = other.age;
+            name = new char[std::strlen(other.name) + 1];
+            std::strcpy(name, other.name);
+        }
+        return *this;
+    }
+
+    // Move assignment
+    Person& operator=(Person&& other) noexcept
+    {
+        if (this != &other)
+        {
+            delete[] name;
+            name       = other.name;
+            age        = other.age;
+            other.name = nullptr;
+        }
+        return *this;
+    }
+
+    // Destructor
+    ~Person()
+    {
+        delete[] name;
+    }
+};
+
+std::ostream& operator<<(std::ostream& os, Person const& p)
+{
+    if (p.name)
+        os << "Person{name: " << p.name << ", age: " << p.age << "}";
+    else
+        os << "Person{moved-from}";
+    return os;
+}
+std::ostream& operator<<(std::ostream& os, Point const& p)
+{
+    os << "(" << p.x << ", " << p.y << ")";
+    return os;
+}
+
+struct Foo
+{
+    Foo(char const* name)
+        : name(std::move(name))
+    {
+    }
+    char const* name;
+    ~Foo() {}
+};
+
+std::ostream& operator<<(std::ostream& os, Foo const& foo)
+{
+    os << foo.name;
+    return os;
 }
 
 int main()
 {
-    run_tests();
+    // vector<Foo, std::allocator<Foo>> v;
+    // for (int i = 1; i < 9; i++)
+    // {
+    //     v.push_back(Foo{"Ashwith"});
+    // }
+    // v.erase(v.begin(), v.end());
+    // v.insert(v.begin(), Foo{"Ashwith"});
+    // v.resize(10, Foo{""});
+    // for (auto it = v.begin(); it != v.end(); it++)
+    // {
+    //     std::cout << *it << ' ';
+    // }
+    // std::cout << '\n';
+    run_benchmark();
     return 0;
 }

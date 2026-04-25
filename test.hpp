@@ -1,36 +1,49 @@
-#include <ArrayList.hpp>
-#include <functional>
+// #include <functional>
+// #include <vector.hpp>
 
-struct Test {
-    std::function<void()> f;
-    const char *name;
-};
+// #define ASSERT(cond)                                                                               \
+//     do                                                                                             \
+//     {                                                                                              \
+//         if (!(cond))                                                                               \
+//         {                                                                                          \
+//             throw std::runtime_error(#cond " failed");                                             \
+//         }                                                                                          \
+//     } while (0)
 
-inline ArrayList<Test> &get_tests()
-{
-    static ArrayList<Test> tests;
-    return tests;
-}
+// struct Test
+// {
+//     std::function<void()> f;
+//     char const*           name;
 
-struct TestRegister {
-    static void register_function(const char *name, std::function<void()> f)
-    {
-        get_tests().push_back({f, name});
-    }
-};
+//     bool        passed  = true;
+//     char const* message = "";
+// };
 
-#define CONCAT(a, b) a##b
-#define UNIQUE_NAME(a, b) CONCAT(a, b)
+// inline vega::vector<Test>& get_tests()
+// {
+//     static vega::vector<Test> tests;
+//     return tests;
+// }
 
-#define TEST(name)                                   \
-    static void UNIQUE_NAME(test_, __LINE__)();      \
-    struct UNIQUE_NAME(TestReg_, __LINE__) {         \
-        UNIQUE_NAME(TestReg_, __LINE__)()            \
-        {                                            \
-            TestRegister::register_function(         \
-                name, UNIQUE_NAME(test_, __LINE__)); \
-        }                                            \
-    };                                               \
-    static UNIQUE_NAME(TestReg_, __LINE__)           \
-        UNIQUE_NAME(instance_, __LINE__);            \
-    static void UNIQUE_NAME(test_, __LINE__)()
+// struct TestRegister
+// {
+//     static void register_function(char const* name, std::function<void()> f)
+//     {
+//         get_tests().push_back({f, name});
+//     }
+// };
+
+// #define CONCAT(a, b) a##b
+// #define UNIQUE_NAME(a, b) CONCAT(a, b)
+
+// #define TEST(name)                                                                                 \
+//     static void UNIQUE_NAME(test_, __LINE__)();                                                    \
+//     struct UNIQUE_NAME(TestReg_, __LINE__)                                                         \
+//     {                                                                                              \
+//         UNIQUE_NAME(TestReg_, __LINE__)()                                                          \
+//         {                                                                                          \
+//             TestRegister::register_function(name, UNIQUE_NAME(test_, __LINE__));                   \
+//         }                                                                                          \
+//     };                                                                                             \
+//     static UNIQUE_NAME(TestReg_, __LINE__) UNIQUE_NAME(instance_, __LINE__);                       \
+//     static void UNIQUE_NAME(test_, __LINE__)()
